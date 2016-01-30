@@ -1,0 +1,42 @@
+#!/bin/sh /etc/rc.common
+# dadder init script
+
+START=90
+STOP=15
+EXTRA_COMMANDS="restart"
+PIDFILE='/tmp/dadder/dadder.pid'
+
+start()
+{
+    if [ -f $PIDFILE ]
+        then
+            echo "Dadder: DNS-Holdon started already : $PIDFILE exists"
+            exit 1
+    fi
+    mkdir -p /tmp/dadder/
+    cp -f /etc/blacklist.txt /tmp/dadder/blacklist.txt
+    cp -f /etc/badip.txt /tmp/dadder/badip.txt
+    dadder \
+        -c /etc/dadder.config \
+        1> /tmp/dadder/dadder.out.log\
+        2> /tmp/dadder/dadder.err.log &
+#    echo $! > $PIDFILE
+#    iptables -t nat -A PREROUTING -p udp --dport 53 -j REDIRECT --to-ports 5353
+    echo ">>>>> Dadder started..."
+}
+
+stop()
+{
+#    iptables -t nat -D PREROUTING -p udp --dport 53 -j REDIRECT --to-ports 5353
+    kill `cat $PIDFILE`
+    rm -f $PIDFILE
+    cp -f /tmp/dadder/blacklist.txt /etc/blacklist.txt
+    cp -f /tmp/dadder/badip.txt /etc/badip.txt
+    echo ">>>>> Dadder stopped..."
+}
+
+restart()
+{
+    stop
+    start
+}
